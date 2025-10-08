@@ -1,0 +1,11 @@
+const express = require("express");
+const router = express.Router();
+const authRouter = require("./auth");
+const userRouter = require("./user");
+const chatRouter = require("./chat");
+const searchRouter = require("./search");
+router.use("/auth", authRouter);
+router.use("/user", userRouter);
+router.use("/chat", chatRouter);
+router.use("/search", searchRouter);
+module.exports = router;

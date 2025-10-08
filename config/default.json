@@ -1,0 +1,14 @@
+{
+  "name": "chat_app",
+  "jwt_access_secret": "lwdkjfefjf8258lfjfkeahd887fgbkjg48kjhqerjhwfbgr885gd6564ghsbgh",
+  "jwt_refresh_secret": "sldfsklj54f4kldfke77dfjrkljlrafea78dsfklsd9sdfsd@!##$#@dfdskjflsd9f78v",
+  "server": {
+    "port": 5000
+  },
+  "db": {
+    "host": "localhost",
+    "user": "root",
+    "password": "12345678",
+    "database": "chat_app"
+  }
+}
