@@ -114,7 +114,7 @@ module.exports = new (class extends Controller {
       res.setHeader("Access-Token", accessToken);
       res.setHeader("Refresh-Token", refreshToken);
 
-      const { id, phone: userPhone, email, bio, profileImage } = user;
+      const { id, phone: userPhone, email, bio, profileImage, username } = user;
       return this.response({
         res,
         data: {
@@ -123,6 +123,8 @@ module.exports = new (class extends Controller {
           email,
           bio,
           profileImage,
+          isLoggedIn: true,
+          username,
         },
         message: "user can log in",
       });

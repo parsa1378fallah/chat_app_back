@@ -1,5 +1,5 @@
 const Controller = require("../../controller");
-const { eq, or, asc } = require("drizzle-orm");
+const { eq, or, asc, and } = require("drizzle-orm");
 
 module.exports = new (class extends Controller {
   // ارسال پیام به کانال
@@ -114,7 +114,7 @@ module.exports = new (class extends Controller {
         res,
         message: "Messages fetched successfully",
         code: 200,
-        data: { channelMessages },
+        data: channelMessages,
       });
     } catch (err) {
       console.error("🔥 getChannelMessages error:", err);
@@ -212,9 +212,12 @@ module.exports = new (class extends Controller {
         .select()
         .from(this.ChannelMember)
         .where(
-          eq(this.ChannelMember.channelId, channelId) &&
+          and(
+            eq(this.ChannelMember.channelId, channelId),
             eq(this.ChannelMember.userId, userId)
+          )
         );
+      console.log(existingMember, channelId, userId);
 
       if (existingMember.length) {
         return this.response({
@@ -235,6 +238,7 @@ module.exports = new (class extends Controller {
         res,
         message: "User added to channel successfully",
         code: 201,
+        data: true,
       });
     } catch (err) {
       console.error("Error in registerChannelChat:", err);
@@ -276,7 +280,7 @@ module.exports = new (class extends Controller {
         res,
         message: "situation cleared",
         code: 200,
-        data: { isOwner },
+        data: isOwner,
       });
     } catch (err) {
       console.error("Error in isUserOwner:", err);

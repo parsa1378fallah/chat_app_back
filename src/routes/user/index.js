@@ -11,5 +11,6 @@ router.post(
   uploadAvatar,
   controller.uploadUserProfile
 );
+router.put("/me", isLoggedIn, controller.updateUser);
 
 module.exports = router;

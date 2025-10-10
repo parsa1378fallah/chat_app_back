@@ -12,7 +12,7 @@ module.exports = new (class extends controller {
       res,
       code: 200,
       message: "user logged in by access token token",
-      data: { ...user },
+      data: { ...user, isLoggedIn: true },
     });
   }
   async getChats(req, res) {
@@ -209,6 +209,73 @@ module.exports = new (class extends controller {
     } catch (error) {
       console.error("🔥 uploadUserProfile error:", error);
       return res.status(500).json({ message: "خطا در آپلود فایل", data: {} });
+    }
+  }
+  async updateUser(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return this.response({
+          res,
+          code: 401,
+          message: "کاربر احراز هویت نشده است",
+        });
+      }
+
+      const {
+        username,
+        displayName,
+        bio,
+
+        phone,
+      } = req.body;
+
+      // ✅ فقط فیلدهایی که واقعا وجود دارند و معتبرند در شیء updateData قرار می‌گیرند
+      const updateData = {};
+      if (username !== undefined) updateData.username = username;
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (bio !== undefined) updateData.bio = bio;
+      if (phone !== undefined) updateData.phone = phone;
+
+      if (Object.keys(updateData).length === 0) {
+        return this.response({
+          res,
+          code: 400,
+          message: "هیچ فیلدی برای بروزرسانی ارسال نشده است",
+        });
+      }
+
+      // ✅ اجرای آپدیت با Drizzle ORM
+      await this.db
+        .update(this.User)
+        .set(updateData)
+        .where(eq(this.User.id, userId));
+
+      // ✅ کاربر جدید را بعد از آپدیت برمی‌گردانیم
+      const updatedUser = await this.db
+        .select({
+          phone: this.User.phone,
+          username: this.User.username,
+          displayName: this.User.displayName,
+          bio: this.User.bio,
+        })
+        .from(this.User)
+        .where(eq(this.User.id, userId))
+        .limit(1);
+
+      return this.response({
+        res,
+        code: 200,
+        message: "اطلاعات کاربر با موفقیت بروزرسانی شد",
+        data: updatedUser[0],
+      });
+    } catch (err) {
+      console.error("🔥 updateUser error:", err);
+      return this.response({
+        res,
+        code: 500,
+        message: "خطای داخلی سرور در بروزرسانی اطلاعات کاربر",
+      });
     }
   }
 })();

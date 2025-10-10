@@ -129,7 +129,7 @@ module.exports = new (class extends Controller {
         res,
         message: "Messages fetched successfully",
         code: 200,
-        data: { chatMessages },
+        data: chatMessages,
       });
     } catch (err) {
       console.error("🔥 getPrivateMessages error:", err);

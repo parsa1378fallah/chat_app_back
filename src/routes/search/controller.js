@@ -37,9 +37,7 @@ module.exports = new (class extends Controller {
       const userResults = await Promise.all(
         users.map(async (u) => {
           const chat = await this.db
-            .select({
-              id: this.PrivateChats.id,
-            })
+            .select({ id: this.PrivateChats.id })
             .from(this.PrivateChats)
             .where(
               or(
@@ -54,29 +52,12 @@ module.exports = new (class extends Controller {
               )
             );
 
-          let lastMessageAt = null;
-          if (chat[0]) {
-            const lastMsg = await this.db
-              .select({ created_at: this.Messages.created_at })
-              .from(this.Messages)
-              .where(
-                and(
-                  eq(this.Messages.chat_type, "private"),
-                  eq(this.Messages.chat_id, chat[0].id)
-                )
-              )
-              .orderBy(desc(this.Messages.created_at))
-              .limit(1);
-            lastMessageAt = lastMsg[0]?.created_at || null;
-          }
-
           return {
             chatType: "private",
             id: u.id,
             name: u.name,
-            chatId: chat[0]?.id || null,
-            isMember: chat.length > 0,
-            lastMessageAt,
+            chatId: chat && chat[0] ? chat[0].id : null,
+            isMember: chat && chat.length > 0,
           };
         })
       );
@@ -99,25 +80,12 @@ module.exports = new (class extends Controller {
               )
             );
 
-          const lastMsg = await this.db
-            .select({ created_at: this.Messages.created_at })
-            .from(this.Messages)
-            .where(
-              and(
-                eq(this.Messages.chat_type, "group"),
-                eq(this.Messages.chat_id, g.id)
-              )
-            )
-            .orderBy(desc(this.Messages.created_at))
-            .limit(1);
-
           return {
             chatType: "group",
             id: g.id,
             name: g.name,
             chatId: g.id,
-            isMember: member.length > 0,
-            lastMessageAt: lastMsg[0]?.created_at || null,
+            isMember: member && member.length > 0,
           };
         })
       );
@@ -140,38 +108,18 @@ module.exports = new (class extends Controller {
               )
             );
 
-          const lastMsg = await this.db
-            .select({ created_at: this.Messages.created_at })
-            .from(this.Messages)
-            .where(
-              and(
-                eq(this.Messages.chat_type, "channel"),
-                eq(this.Messages.chat_id, c.id)
-              )
-            )
-            .orderBy(desc(this.Messages.created_at))
-            .limit(1);
-
           return {
             chatType: "channel",
             id: c.id,
             name: c.name,
             chatId: c.id,
-            isMember: member.length > 0,
-            lastMessageAt: lastMsg[0]?.created_at || null,
+            isMember: member && member.length > 0,
           };
         })
       );
 
       // --- 4. خروجی نهایی ---
       const allResults = [...userResults, ...groupResults, ...channelResults];
-
-      // سورت بر اساس آخرین پیام (جدیدترین اول)
-      allResults.sort((a, b) => {
-        const dateA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-        const dateB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-        return dateB - dateA; // جدیدترها در بالا
-      });
 
       return this.response({
         res,

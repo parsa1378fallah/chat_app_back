@@ -13,12 +13,12 @@ module.exports = (io) => {
     });
 
     socket.on("sendPrivateMessage", (data) => {
-      if (data.chat_id) {
-        io.to(`chat_private_${data.chat_id}`).emit(
+      if (data.chatId) {
+        io.to(`chat_private_${data.chatId}`).emit(
           "receivePrivateMessage",
           data
         );
-        console.log(`💬 Private message sent to chat_private_${data.chat_id}`);
+        console.log(`💬 Private message sent to chat_private_${data.chatId}`);
       }
     });
 
@@ -33,9 +33,9 @@ module.exports = (io) => {
     });
 
     socket.on("sendGroupMessage", (data) => {
-      if (data.chat_id) {
-        io.to(`chat_group_${data.chat_id}`).emit("receiveGroupMessage", data);
-        console.log(`📢 Group message sent to chat_group_${data.chat_id}`);
+      if (data.chatId) {
+        io.to(`chat_group_${data.chatId}`).emit("receiveGroupMessage", data);
+        console.log(`📢 Group message sent to chat_group_${data.chatId}`);
       }
     });
 

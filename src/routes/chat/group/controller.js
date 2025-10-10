@@ -90,7 +90,7 @@ module.exports = new (class extends Controller {
         res,
         message: "Messages fetched successfully",
         code: 200,
-        data: { groupMessages },
+        data: groupMessages,
       });
     } catch (err) {
       console.error("🔥 getGroupMessages error:", err);
@@ -226,6 +226,7 @@ module.exports = new (class extends Controller {
         res,
         message: "User joined the group successfully",
         code: 201,
+        data: true,
       });
     } catch (err) {
       console.error("Error in joinGroupChat:", err);
