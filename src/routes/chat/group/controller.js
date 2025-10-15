@@ -237,4 +237,84 @@ module.exports = new (class extends Controller {
       });
     }
   }
+  // دریافت اطلاعات کامل گروه
+  async getGroupInfo(req, res) {
+    try {
+      const { groupId } = req.params;
+      console.log(groupId, "cccc");
+
+      // بررسی ورودی
+      if (!groupId) {
+        return this.response({
+          res,
+          code: 400,
+          message: "groupId is required",
+        });
+      }
+
+      // گرفتن اطلاعات گروه
+      const [group] = await this.db
+        .select({
+          id: this.Group.id,
+          name: this.Group.name,
+          createdBy: this.Group.createdBy,
+          createdAt: this.Group.createdAt,
+        })
+        .from(this.Group)
+        .where(eq(this.Group.id, Number(groupId)));
+
+      if (!group) {
+        return this.response({
+          res,
+          code: 404,
+          message: "Group not found",
+        });
+      }
+
+      // گرفتن اطلاعات سازنده گروه
+      const [creator] = await this.db
+        .select({
+          id: this.User.id,
+          username: this.User.username,
+          profileImage: this.User.profileImage,
+        })
+        .from(this.User)
+        .where(eq(this.User.id, group.createdBy));
+
+      // گرفتن اعضای گروه
+      const members = await this.db
+        .select({
+          id: this.User.id,
+          username: this.User.username,
+          profileImage: this.User.profileImage,
+          role: this.GroupMember.role,
+          joinedAt: this.GroupMember.joinedAt,
+        })
+        .from(this.GroupMember)
+        .innerJoin(this.User, eq(this.GroupMember.userId, this.User.id))
+        .where(eq(this.GroupMember.groupId, Number(groupId)));
+
+      // ترکیب همه داده‌ها
+      const groupInfo = {
+        ...group,
+        creator: creator || null,
+        members,
+        membersCount: members.length,
+      };
+
+      return this.response({
+        res,
+        code: 200,
+        message: "Group info fetched successfully",
+        data: groupInfo,
+      });
+    } catch (err) {
+      console.error("🔥 getGroupInfo error:", err);
+      return this.response({
+        res,
+        code: 500,
+        message: "Internal server error",
+      });
+    }
+  }
 })();

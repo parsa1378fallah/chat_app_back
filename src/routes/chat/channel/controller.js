@@ -287,4 +287,84 @@ module.exports = new (class extends Controller {
       return res.status(500).json({ message: "Internal server error" });
     }
   }
+  // گرفتن اطلاعات یک کانال
+  async getChannelInfo(req, res) {
+    try {
+      const channelId = Number(req.params.channelId);
+
+      if (!channelId) {
+        return this.response({
+          res,
+          message: "channelId is required",
+          code: 400,
+        });
+      }
+
+      // واکشی اطلاعات کانال
+      const [channel] = await this.db
+        .select({
+          id: this.Channel.id,
+          name: this.Channel.name,
+          createdBy: this.Channel.createdBy,
+          createdAt: this.Channel.createdAt,
+        })
+        .from(this.Channel)
+        .where(eq(this.Channel.id, channelId));
+
+      if (!channel) {
+        return this.response({
+          res,
+          message: "Channel not found",
+          code: 404,
+        });
+      }
+
+      // واکشی اطلاعات سازنده کانال
+      const [creator] = await this.db
+        .select({
+          id: this.User.id,
+          username: this.User.username,
+          profileImage: this.User.profileImage,
+        })
+        .from(this.User)
+        .where(eq(this.User.id, channel.createdBy));
+
+      // تعداد اعضای کانال
+      const membersCountResult = await this.db
+        .select()
+        .from(this.ChannelMember)
+        .where(eq(this.ChannelMember.channelId, channelId));
+
+      const membersCount = membersCountResult.length;
+
+      const members = await this.db
+        .select({
+          id: this.User.id,
+          username: this.User.username,
+          profileImage: this.User.profileImage,
+        })
+        .from(this.ChannelMember)
+        .innerJoin(this.User, eq(this.User.id, this.ChannelMember.userId))
+        .where(eq(this.ChannelMember.channelId, channelId));
+
+      return this.response({
+        res,
+        code: 200,
+        message: "Channel info fetched successfully",
+        data: {
+          ...channel,
+          creator,
+          membersCount,
+          members,
+        },
+      });
+    } catch (err) {
+      console.error("🔥 getChannelInfo error:", err);
+      return this.response({
+        res,
+        message: "Internal server error",
+        code: 500,
+      });
+    }
+  }
 })();
