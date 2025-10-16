@@ -185,6 +185,7 @@ module.exports = new (class extends Controller {
   }
 
   // پیوستن به گروه
+  // پیوستن به گروه
   async joinGroupChat(req, res) {
     try {
       const userId = req.user?.id;
@@ -198,13 +199,13 @@ module.exports = new (class extends Controller {
         });
       }
 
-      // بررسی که کاربر قبلاً عضو گروه هست یا نه
+      // بررسی اینکه کاربر از قبل عضو گروه هست یا نه
       const existingMember = await this.db
         .select()
         .from(this.GroupMember)
         .where(
-          eq(this.GroupMember.groupId, groupId) &&
-            eq(this.GroupMember.userId, userId)
+          eq(this.GroupMember.groupId, Number(groupId)) &&
+            eq(this.GroupMember.userId, Number(userId))
         );
 
       if (existingMember.length) {
@@ -215,18 +216,59 @@ module.exports = new (class extends Controller {
         });
       }
 
-      // پیوستن کاربر به گروه
-      const result = await this.db.insert(this.GroupMember).values({
-        userId,
-        groupId,
+      // اضافه کردن کاربر به گروه
+      await this.db.insert(this.GroupMember).values({
+        userId: Number(userId),
+        groupId: Number(groupId),
         joinedAt: new Date(),
       });
+
+      // گرفتن اطلاعات گروه
+      const [group] = await this.db
+        .select({
+          id: this.Group.id,
+          name: this.Group.name,
+          createdAt: this.Group.createdAt,
+        })
+        .from(this.Group)
+        .where(eq(this.Group.id, Number(groupId)));
+
+      if (!group) {
+        return this.response({
+          res,
+          code: 404,
+          message: "Group not found",
+        });
+      }
+
+      // گرفتن آخرین پیام گروه (اختیاری)
+      const [lastMessage] = await this.db
+        .select({
+          content: this.Message.content,
+          createdAt: this.Message.createdAt,
+        })
+        .from(this.Message)
+        .where(eq(this.Message.chatId, Number(groupId)))
+        .orderBy(asc(this.Message.createdAt)) // اگر خواستی می‌تونی desc هم بذاری برای آخرین پیام
+        .limit(1);
+
+      // ساخت آبجکت نهایی در قالب Chat
+      const chatData = {
+        id: group.id,
+        chatType: "group",
+        name: group.name,
+        lastMessage: lastMessage?.content || null,
+        lastMessageAt: lastMessage?.createdAt || null,
+        avatar: null, // اگر خواستی برای گروه‌ها آواتار اضافه کنی
+        unread: 0,
+        time: lastMessage?.createdAt || null,
+      };
 
       return this.response({
         res,
         message: "User joined the group successfully",
         code: 201,
-        data: true,
+        data: chatData,
       });
     } catch (err) {
       console.error("Error in joinGroupChat:", err);
@@ -237,6 +279,7 @@ module.exports = new (class extends Controller {
       });
     }
   }
+
   // دریافت اطلاعات کامل گروه
   async getGroupInfo(req, res) {
     try {
