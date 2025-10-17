@@ -140,6 +140,7 @@ module.exports = new (class extends Controller {
       });
     }
   }
+
   async initPrivateChat(req, res) {
     try {
       const senderId = Number(req.user?.id);
@@ -152,6 +153,7 @@ module.exports = new (class extends Controller {
           message: "receiverId is required",
         });
       }
+
       if (receiverId === senderId) {
         return this.response({
           res,
@@ -171,35 +173,66 @@ module.exports = new (class extends Controller {
           )
         );
 
+      let createdChat;
+
       if (chat.length) {
-        return this.response({
-          res,
-          code: 200,
-          message: "Chat already exists",
-          data: chat[0],
+        createdChat = chat[0];
+      } else {
+        // ایجاد چت جدید
+        const result = await this.db.insert(this.PrivateChats).values({
+          user1Id: senderId,
+          user2Id: receiverId,
+          createdAt: new Date(),
         });
+
+        const insertedId =
+          result.insertId ||
+          (Array.isArray(result) ? result[0]?.insertId : null);
+
+        const [newChat] = await this.db
+          .select()
+          .from(this.PrivateChats)
+          .where(eq(this.PrivateChats.id, insertedId));
+
+        createdChat = newChat;
       }
 
-      // ایجاد چت جدید
-      const result = await this.db.insert(this.PrivateChats).values({
-        user1Id: senderId,
-        user2Id: receiverId,
-        createdAt: new Date(),
-      });
+      // پیدا کردن یوزر مقابل
+      const otherUserId =
+        createdChat.user1Id === senderId
+          ? createdChat.user2Id
+          : createdChat.user1Id;
 
-      const insertedId =
-        result.insertId || (Array.isArray(result) ? result[0]?.insertId : null);
+      const [otherUser] = await this.db
+        .select({
+          id: this.Users.id,
+          name: this.Users.name,
+          avatar: this.Users.avatar,
+        })
+        .from(this.Users)
+        .where(eq(this.Users.id, otherUserId));
 
-      const [newChat] = await this.db
-        .select()
-        .from(this.PrivateChats)
-        .where(eq(this.PrivateChats.id, insertedId));
+      // آماده‌سازی خروجی در قالب اینترفیس Chat
+      const chatData = {
+        id: createdChat.id,
+        chatType: "private",
+        name: otherUser?.name || "Unknown User",
+        lastMessage: null,
+        lastMessageAt: null,
+        avatar: otherUser?.avatar || null,
+        unread: 0,
+        time: createdChat.createdAt
+          ? createdChat.createdAt.toISOString()
+          : null,
+      };
 
       return this.response({
         res,
-        code: 201,
-        message: "Private chat created successfully",
-        data: newChat,
+        code: chat.length ? 200 : 201,
+        message: chat.length
+          ? "Chat already exists"
+          : "Private chat created successfully",
+        data: chatData,
       });
     } catch (err) {
       console.error("Error in initPrivateChat:", err);
@@ -210,6 +243,7 @@ module.exports = new (class extends Controller {
       });
     }
   }
+
   async getFriendInfo(req, res) {
     try {
       const userId = req.user?.id;
